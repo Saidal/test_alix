@@ -1,0 +1,88 @@
+var app = require('express')();
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
+var request = require('superagent');
+
+var flag1 = 0;
+var flag2 = 0;
+
+function la_req(msg, socket)
+{
+	request
+		.post('https://api.recast.ai/v2/request')
+		.send({
+			text: msg,
+			language: 'fr'
+			})
+		.set('Authorization', 'Token d53e365ef1baaf008eb7b741fd9c9855')
+		.end(function(err, res){
+				var hi = JSON.parse(res.text);
+				if (hi.results.intents[0])
+				{
+				console.log(hi.results.intents[0].slug);
+				if (hi.results.intents[0].slug == "greetings")
+				{
+					if (flag2 == 1)
+						socket.emit('resp', 'Rebonjour encore une fois mais arrete maitenant et parle moi aller confie toi');
+					if (flag1 == 1)
+						socket.emit('resp', 'On insulte pas avant de dire bonjour');
+					if (flag2 == 0)
+						socket.emit('resp', 'Bonjour a toi jeune padawan');
+					flag2 = 1;
+				}
+				if (hi.results.intents[0].slug == "insultes")
+				{
+					flag1 = 1;
+					socket.emit('resp', 'ECOUTE MON PETIT POTE QUE LES CHOSES SOIENT CLAIR tu est un nazi');
+				}
+				if (hi.results.intents[0].slug == "aurevoir")
+				{
+					socket.emit('resp', 'Aller salut');
+				}
+				if (hi.results.intents[0].slug == "sexe")
+				{
+					if (hi.results.entities['forman'])
+					{
+						if (hi.results.entities['problem'])
+						{
+							console.log('Cest chaud pour toi si ta capote a craquer');
+						}
+					}
+				}
+			}})
+}
+
+app.get('/', function(req, res){
+		res.sendfile('index.html');
+	});
+
+io.on('connection', function(socket){
+		console.log('Connected');
+		socket.on('chat message', function(msg){
+				la_req(msg, socket);
+			})
+	});
+
+http.listen(3000, function(){
+		console.log('Listening on 3000');
+	});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
